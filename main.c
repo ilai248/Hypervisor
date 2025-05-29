@@ -3,9 +3,9 @@
 #include <wdm.h>
 #include <intrin.h>
 
-extern void AsmEnableVmxOperation(void);
-extern UINT32 AsmRdmsrWord(UINT32 msr);
-extern INT64 AsmReadRegister(USHORT reg);
+extern void enableVmx(void);
+extern UINT32 readMsrWord(UINT32 msr);
+extern INT64 readReg(USHORT reg);
 
 #define IRP_MJ_CREATE                   0x00
 #define IRP_MJ_CREATE_NAMED_PIPE        0x01
@@ -136,10 +136,10 @@ static BOOLEAN vmxSucceeded(USHORT vmxResult, LPCSTR instructionName, BOOLEAN vm
 
 BOOLEAN StartVmx() {
     // Step 1 - Enable VMX.
-    AsmEnableVmxOperation();
+    enableVmx();
 
     // Step 2 - Assert valid bits.
-    INT64 cr0 = AsmReadRegister(CR0), cr4 = AsmReadRegister(CR4);
+    INT64 cr0 = readReg(CR0), cr4 = readReg(CR4);
     UINT32 cr0Fixed0 = readmsr(IA32_VMX_CR0_FIXED0), cr0Fixed1 = readmsr(IA32_VMX_CR0_FIXED1);
     UINT32 cr4Fixed0 = readmsr(IA32_VMX_CR4_FIXED0), cr4Fixed1 = readmsr(IA32_VMX_CR4_FIXED1);
     if ((~cr0) & cr0Fixed0) {
@@ -188,6 +188,7 @@ NTSTATUS
 DrvCreate(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 {
     UNREFERENCED_PARAMETER(DeviceObject);
+    DbgPrint("[*] CREATE CALLED");
 
     if (StartVmx()) {
         DbgPrint("[*] VMX Operation Enabled Successfully !");
